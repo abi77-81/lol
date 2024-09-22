@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Frisbee Stats Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .centered {
+            text-align: center;
+            margin-top: 50px;
+        }
+        .player-card {
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Ultimate Frisbee Stats Tracker</h1>
+
+    <!-- Starting Page -->
+    <div id="startPage" class="section centered">
+        <h2>Choose Option</h2>
+        <button onclick="showPage('offense')">Offense</button>
+        <button onclick="showPage('defense')">Defense</button>
+        <button onclick="showHistory()">Stats History</button>
+    </div>
+
+    <!-- Offensive Stats Page (7 players) -->
+    <div id="offensePage" class="hidden">
+        <h2>Offensive Statistics (7 Players)</h2>
+        <div id="offensePlayers">
+            <!-- Offensive players will be generated here -->
+        </div>
+        <button onclick="submitPlayerStats('offense')">Submit Offensive Stats</button>
+        <button onclick="goBack()">Go Back</button>
+    </div>
+
+    <!-- Defensive Stats Page (7 players) -->
+    <div id="defensePage" class="hidden">
+        <h2>Defensive Statistics (7 Players)</h2>
+        <div id="defensePlayers">
+            <!-- Defensive players will be generated here -->
+        </div>
+        <button onclick="submitPlayerStats('defense')">Submit Defensive Stats</button>
+        <button onclick="goBack()">Go Back</button>
+    </div>
+
+    <!-- Results Summary Page -->
+    <div id="resultPage" class="hidden">
+        <h2>Results Summary:</h2>
+        <ul id="resultsList"></ul>
+        <button onclick="goBack()">Back to Start</button>
+    </div>
+
+    <!-- Stats History Page -->
+    <div id="historyPage" class="hidden">
+        <h2>Stats History:</h2>
+        <ul id="historyList"></ul>
+        <button onclick="goBack()">Back to Start</button>
+    </div>
+</div>
+
+<script>
+    const playerCount = 7; // Number of players to track for Offense or Defense
+    let statsData = [];
+    let historyData = [];
+
+    function showPage(type) {
+        document.getElementById("startPage").classList.add("hidden");
+        document.getElementById(type + "Page").classList.remove("hidden");
+        createPlayerCards(type);
+    }
+
+    function showHistory() {
+        document.getElementById("startPage").classList.add("hidden");
+        document.getElementById("historyPage").classList.remove("hidden");
+        displayHistory();
+    }
+
+    function goBack() {
+        document.getElementById("startPage").classList.remove("hidden");
+        document.getElementById("offensePage").classList.add("hidden");
+        document.getElementById("defensePage").classList.add("hidden");
+        document.getElementById("resultPage").classList.add("hidden");
+        document.getElementById("historyPage").classList.add("hidden");
+    }
+
+    function createPlayerCards(type) {
+        const container = document.getElementById(type + "Players");
+        container.innerHTML = ''; // Clear existing player cards
+        const stats = type === 'offense' ? ['Goals', 'Assists', 'Yardage Cuts', 'Free Cuts'] : ['Blocks', 'Interceptions', 'Cuts Canceled', 'Upline Stops'];
+
+        for (let i = 1; i <= playerCount; i++) {
+            let playerCard = document.createElement('div');
+            playerCard.className = 'player-card';
+            playerCard.innerHTML = `<input type="text" placeholder="Player ${i} Name">`;
+            let statsContainer = document.createElement('div');
+            statsContainer.className = 'stats';
+            stats.forEach(stat => {
+                let button = document.createElement('button');
+                button.textContent = `+1 ${stat}`;
+                button.onclick = () => incrementStat(i, type, stat);
+                statsContainer.appendChild(button);
+            });
+            playerCard.appendChild(statsContainer);
+            container.appendChild(playerCard);
+        }
+    }
+
+    function incrementStat(index, type, stat) {
+        if (!statsData[index]) {
+            statsData[index] = { playerName: document.querySelector(`#${type}Players .player-card:nth-child(${index}) input`).value || `Player ${index}`, type: type, stats: {} };
+        }
+        statsData[index].stats[stat] = (statsData[index].stats[stat] || 0) + 1;
+    }
+
+    function submitPlayerStats(type) {
+        const point = `Point ${historyData.length + 1}`;
+        const data = { point: point, type: type, stats: [] };
+        statsData.forEach((entry, index) => {
+            if (entry && entry.type === type) {
+                data.stats.push({
+                    playerName: entry.playerName,
+                    data: entry.stats
+                });
+            }
+        });
+        historyData.push(data);
+        statsData = []; // Reset current stats data
+        document.getElementById(type + "Page").classList.add("hidden");
+        document.getElementById("resultPage").classList.remove("hidden");
+        displayResults(data);
+    }
+
+    function displayResults(data) {
+        const list = document.getElementById("resultsList");
+        list.innerHTML = `<h3>${data.point}</h3>`; // Clear existing results and add point heading
+        data.stats.forEach(player => {
+            let statsText = Object.entries(player.data).map(([key, value]) => `${key}: ${value}`).join(', ');
+            list.innerHTML += `<li>${player.playerName}: ${statsText}</li>`;
+        });
+    }
+
+    function displayHistory() {
+        const list = document.getElementById("historyList");
+        list.innerHTML = ''; // Clear existing results
+        historyData.forEach(data => {
+            list.innerHTML += `<h3>${data.point} - ${data.type.toUpperCase()} STATS</h3>`;
+            data.stats.forEach(player => {
+                let statsText = Object.entries(player.data).map(([key, value]) => `${key}: ${value}`).join(', ');
+                list.innerHTML += `<li>${player.playerName}: ${statsText}</li>`;
+            });
+        });
+    }
+</script>
+
+</body>
+</html>
